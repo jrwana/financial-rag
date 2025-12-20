@@ -7,7 +7,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # default paths
-INDEX_DIR = "./index"
+INDEX_DIR = "./.data/index"
 DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 

@@ -216,8 +216,9 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Other
-data
-docs
-.vscode
+data/
+docs/
+.vscode/
 .DS_Store
-remove_dot_underscore.py
+scripts/local/
+.data/
