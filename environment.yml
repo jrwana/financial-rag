@@ -1,0 +1,26 @@
+name: financial-rag
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pytorch::pytorch
+  - pytorch::pytorch-cuda=12.1
+  - faiss-gpu
+  - pip
+  - pip:
+      - langchain
+      - langchain-openai
+      - langchain-community
+      - langchain-huggingface
+      - openai
+      - sentence-transformers
+      - fastapi
+      - uvicorn[standard]
+      - python-dotenv
+      - pydantic
+      - httpx
+      - pytest
+      - -e .
