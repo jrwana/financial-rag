@@ -134,3 +134,68 @@ class TestQuery:
                 {"source": "doc2.pdf", "page": 5}
             ]
         }
+
+
+class TestQueryResponseShape:
+    """Tests for query response structure (not exact content)"""
+
+    def test_response_has_required_keys(self):
+        """Response should have 'answer' and 'sources' keys"""
+        mock_chain = Mock()
+        mock_chain.retriever = Mock()
+        mock_chain.retriever.invoke.return_value = []
+        mock_chain.invoke.return_value = "Any answer"
+
+        result = query(mock_chain, "test question")
+
+        assert "answer" in result
+        assert "sources" in result
+
+    def test_answer_is_string(self):
+        """Answer should be a string"""
+        mock_chain = Mock()
+        mock_chain.retriever = Mock()
+        mock_chain.retriever.invoke.return_value = []
+        mock_chain.invoke.return_value = "Some response"
+
+        result = query(mock_chain, "test")
+
+        assert isinstance(result["answer"], str)
+
+    def test_sources_is_list(self):
+        """Sources should be a list"""
+        mock_chain = Mock()
+        mock_chain.retriever = Mock()
+        mock_chain.retriever.invoke.return_value = []
+        mock_chain.invoke.return_value = "Answer"
+
+        result = query(mock_chain, "test")
+
+        assert isinstance(result["sources"], list)
+
+    def test_sources_contain_metadata(self):
+        """Each source should contain metadata dict"""
+        mock_chain = Mock()
+        mock_chain.retriever = Mock()
+
+        mock_doc = Mock()
+        mock_doc.metadata = {"source": "file.pdf", "page": 1}
+        mock_chain.retriever.invoke.return_value = [mock_doc]
+        mock_chain.invoke.return_value = "Answer"
+
+        result = query(mock_chain, "test")
+
+        assert len(result["sources"]) == 1
+        assert isinstance(result["sources"][0], dict)
+        assert "source" in result["sources"][0]
+
+    def test_answer_is_non_empty_string(self):
+        """Answer should not be empty when LLM returns response"""
+        mock_chain = Mock()
+        mock_chain.retriever = Mock()
+        mock_chain.retriever.invoke.return_value = []
+        mock_chain.invoke.return_value = "Non-empty answer"
+
+        result = query(mock_chain, "test")
+
+        assert len(result["answer"]) > 0
