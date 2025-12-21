@@ -8,6 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 
 from src.embeddings import load_index
+from src.config import settings
 
 # default settings
 DEFAULT_MODEL = "gpt-4o-mini"

@@ -15,6 +15,7 @@ dependencies = [
     "pydantic",
     "httpx",
     "pypdf",
+    "pydantic-settings"
 ]
 
 [project.optional-dependencies]

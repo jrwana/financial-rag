@@ -25,3 +25,4 @@ dependencies:
       - pypdf
       - pytest
       - -e .
+      - pydantic-settings

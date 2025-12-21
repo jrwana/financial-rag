@@ -5,10 +5,11 @@ Convert text chunks into vectors and store them in FAISS
 from pathlib import Path
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from src.config import settings
 
 # default paths
-INDEX_DIR = "./.data/index"
-DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+INDEX_DIR = settings.INDEX_PATH
+DEFAULT_MODEL = settings.EMBEDDINGS_MODEL
 
 
 def get_embeddings(model_name: str = DEFAULT_MODEL):
