@@ -11,8 +11,14 @@ class Settings(BaseSettings):
     DEVICE: Literal["cuda", "cpu"] = "cuda"
 
     # Paths
-    INDEX_PATH: str = "./.data/index"
-    DOCS_PATH: str = "./data"
+    # INDEX_PATH: str = "./.data/index"
+    # INDEX_PATH: str = f"./.data/index/{ENV}/{EMBEDDINGS_MODEL}"
+    DOCS_PATH: str = "./.data"
+
+    @property
+    def index_path(self) -> str:
+         # e.g., ".data/index/local/all-MiniLM-L6-v2"
+         return f"./.data/index/{self.ENV}/{self.EMBEDDINGS_MODEL.replace('/', '_')}"
 
     # RAG settings
     DEFAULT_K: int = 4

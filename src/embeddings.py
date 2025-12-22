@@ -6,9 +6,10 @@ from pathlib import Path
 from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
 from src.config import settings
+import json
 
 # default paths
-INDEX_DIR = settings.INDEX_PATH
+INDEX_DIR = settings.index_path
 DEFAULT_MODEL = settings.EMBEDDINGS_MODEL
 
 
@@ -62,12 +63,28 @@ def save_index(index: FAISS, index_dir: str = INDEX_DIR):
     index.save_local(index_dir)
     print(f"Index saved to {index_dir}")
 
+    metadata = {
+        "provider": settings.EMBEDDINGS_PROVIDER,
+        "model": settings.EMBEDDINGS_MODEL
+    }
+    Path(index_dir, "metadata.json").write_text(json.dumps(metadata))
+
 
 def load_index(index_dir: str = INDEX_DIR, model_name: str = DEFAULT_MODEL) -> FAISS:
     """Load FAISS index from disk"""
     if not Path(index_dir).exists():
         raise FileNotFoundError(f"Index not found at {index_dir}. Run create_index first.")
-    embeddings = get_embeddings(model_name)
+
+    # check if current settings matches metadata
+    metadata_path = Path(index_dir) / "metadata.json"
+    if metadata_path.exists():
+        saved = json.loads(metadata_path.read_text())
+        if saved["provider"] != settings.EMBEDDINGS_PROVIDER:
+            raise ValueError(f"Index was created with {saved['provider']}, but current provider is {settings.EMBEDDINGS_PROVIDER}")
+        if saved["model"] != settings.EMBEDDINGS_MODEL:
+            raise ValueError(f"Index was created with {saved['model']}, but current model is {settings.EMBEDDINGS_MODEL}")
+
+    embeddings = get_embeddings(model_name=model_name)
     index = FAISS.load_local(index_dir, embeddings, allow_dangerous_deserialization=True)
     print(f"Index loaded from {index_dir}")
     return index
