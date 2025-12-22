@@ -1,13 +1,14 @@
 """
-Docstring for app
+Routes
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 
 from src.ingestion import ingest
 from src.embeddings import create_index, save_index, load_index
 from src.retrieval import create_chain, query
+from src.api import require_api_key
 
 app = FastAPI(title="Financial RAG API")
 
@@ -62,8 +63,9 @@ async def ingest_documents():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/query", response_model=QueryResponse)
-async def query_rag(request: QueryRequest):
+async def query_rag(request: QueryRequest, _: None = Depends(require_api_key)):
     """Query the RAG system and return answer and sources"""
     global chain
 
@@ -82,6 +84,7 @@ async def query_rag(request: QueryRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/health")
 async def health():
