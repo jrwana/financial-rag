@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from src.ingestion import ingest
 from src.embeddings import create_index, save_index, load_index
 from src.retrieval import create_chain, query
-from src.api import require_api_key
+from src.api import require_api_key, require_admin_key
 
 app = FastAPI(title="Financial RAG API")
 
@@ -44,7 +44,7 @@ async def startup():
 
 
 @app.post("/ingest", response_model=IngestResponse)
-async def ingest_documents():
+async def ingest_documents(_: None = Depends(require_admin_key)):
     """Rebuild the vector database from documents"""
     global chain
 
