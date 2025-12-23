@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Literal
+from fastapi.middleware.cors import CORSMiddleware
 
 class Settings(BaseSettings):
     # Environment
@@ -31,6 +32,9 @@ class Settings(BaseSettings):
 
     # Other
     RATE_LIMIT_PER_MINUTE: int = 60  # requests per mimute
+
+    # Comma-separated origins, e.g., "https://app.example.com,https://admin.example.com"
+    CORS_ORIGINS: str = ""  # Empty = use defaults based on ENV
 
     class Config:
           env_file = ".env"

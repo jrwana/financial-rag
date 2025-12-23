@@ -9,8 +9,28 @@ from src.ingestion import ingest
 from src.embeddings import create_index, save_index, load_index
 from src.retrieval import create_chain, query
 from src.deps import require_api_key, require_admin_key, check_rate_limit
+from fastapi.middleware.cors import CORSMiddleware
+from src.config import settings
 
 app = FastAPI(title="Financial RAG API")
+
+if settings.ENV == "prod":
+      # Prod: strict allowlist from env
+      origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+      if not origins:
+          origins = []  # No CORS if not configured (safest default)
+else:
+    # Local: permissive for development
+    origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],  # Or ["*"] if needed
+    allow_headers=["X-API-Key", "X-Admin-Key", "Content-Type"],
+)
+
 
 # global state
 chain = None

@@ -82,3 +82,12 @@ financial-rag/
 ├── pyproject.toml      # Package configuration
 └── Dockerfile          # Production container
 ```
+
+## CORS Configuration
+
+  In production, set `CORS_ORIGINS` to a comma-separated list of allowed origins:
+
+  ```bash
+  CORS_ORIGINS=https://myapp.com,https://admin.myapp.com
+
+  In local mode, CORS is permissive (all origins allowed).
