@@ -1,5 +1,6 @@
-from fastapi import Header, HTTPException, Depends
-from src.config import settings
+from fastapi import Header, HTTPException, Depends, Request
+from .config import settings
+from .rate_limit import limiter
 
 
 def require_api_key(x_api_key: str | None = Header(None)):
@@ -22,3 +23,10 @@ def require_admin_key(x_admin_key: str | None = Header(None)):
 
     if x_admin_key != settings.ADMIN_API_KEY:
         raise HTTPException(403, "Invalid Admin key")
+
+
+async def check_rate_limit(request: Request) -> None:
+    """Rate limit check - only in prod"""
+    if settings.ENV != "prod":
+        return
+    limiter.check(request)

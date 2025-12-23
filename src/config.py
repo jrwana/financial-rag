@@ -29,7 +29,11 @@ class Settings(BaseSettings):
     API_KEY: str = ""        # For /query auth in prod
     ADMIN_API_KEY: str = ""  # For /ingest auth in prod
 
+    # Other
+    RATE_LIMIT_PER_MINUTE: int = 60  # requests per mimute
+
     class Config:
           env_file = ".env"
+
 
 settings = Settings()

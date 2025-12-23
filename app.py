@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from src.ingestion import ingest
 from src.embeddings import create_index, save_index, load_index
 from src.retrieval import create_chain, query
-from src.api import require_api_key, require_admin_key
+from src.deps import require_api_key, require_admin_key, check_rate_limit
 
 app = FastAPI(title="Financial RAG API")
 
@@ -65,7 +65,11 @@ async def ingest_documents(_: None = Depends(require_admin_key)):
 
 
 @app.post("/query", response_model=QueryResponse)
-async def query_rag(request: QueryRequest, _: None = Depends(require_api_key)):
+async def query_rag(
+    request: QueryRequest,
+    _auth: None = Depends(require_api_key),
+    _rate: None = Depends(check_rate_limit),
+    ):
     """Query the RAG system and return answer and sources"""
     global chain
 
