@@ -11,8 +11,17 @@ from src.retrieval import create_chain, query
 from src.deps import require_api_key, require_admin_key, check_rate_limit
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
+from dataclasses import dataclass
+from typing import Any
+
+@dataclass
+class RAGState:
+    chain: Any
+    index: Any
 
 app = FastAPI(title="Financial RAG API")
+
+app.state.rag = None
 
 if settings.ENV == "prod":
       # Prod: strict allowlist from env
@@ -30,10 +39,6 @@ app.add_middleware(
     allow_methods=["GET", "POST"],  # Or ["*"] if needed
     allow_headers=["X-API-Key", "X-Admin-Key", "Content-Type"],
 )
-
-
-# global state
-chain = None
 
 
 class QueryRequest(BaseModel):
@@ -54,10 +59,10 @@ class IngestResponse(BaseModel):
 @app.on_event("startup")
 async def startup():
     """Load existing index on startup if available"""
-    global chain
     try:
         index = load_index()
         chain = create_chain(index)
+        app.state.rag = RAGState(chain=chain, index=index)
         print("Index loaded on startup")
     except Exception as e:
         print(f"No existing index found: {e}")
@@ -66,13 +71,15 @@ async def startup():
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest_documents(_: None = Depends(require_admin_key)):
     """Rebuild the vector database from documents"""
-    global chain
-
     try:
+        # Build everything in local variables first
         chunks = ingest()
-        index = create_index(chunks)
-        save_index(index)
-        chain = create_chain(index)
+        new_index = create_index(chunks)
+        save_index(new_index)
+        new_chain = create_chain(new_index)
+
+        # atomic swap - single assignment replaces entire state
+        app.state.rag = RAGState(chain=new_chain, index=new_index)
 
         return IngestResponse(
             status="success",
@@ -91,17 +98,16 @@ async def query_rag(
     _rate: None = Depends(check_rate_limit),
     ):
     """Query the RAG system and return answer and sources"""
-    global chain
+    rag = app.state.rag  # snapshot the reference
 
-    if chain is None:
+    if rag is None:
         raise HTTPException(
             status_code=400,
             detail="No index loaded. Call /ingest first"
         )
 
     try:
-        result = query(chain, request.question)
-
+        result = query(rag.chain, request.question)
         return QueryResponse(
             answer=result["answer"],
             sources=result["sources"]
@@ -113,7 +119,7 @@ async def query_rag(
 @app.get("/health")
 async def health():
     """Health check endpoint"""
-    return {"status": "ok", "index_loaded": chain is not None}
+    return {"status": "ok", "index_loaded": app.state.rag is not None}
 
 
 if __name__ == "__main__":

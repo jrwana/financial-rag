@@ -222,3 +222,4 @@ docs/
 .DS_Store
 scripts/local/
 .data/
+.claude/
