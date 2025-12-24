@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from langchain_community.callbacks import get_openai_callback
 
 from src.embeddings import load_index
 from src.config import settings
@@ -53,17 +54,31 @@ def create_chain(index, model: str = DEFAULT_MODEL, k: int = DEFAULT_K):
     return chain
 
 
-def query(chain, question: str) -> dict:
+def query(chain, question: str, include_debug: bool = False) -> dict:
     """Query the RAG system."""
     docs = chain.retriever.invoke(question)
-    answer = chain.invoke(question)
+
+    # Use callback to capture token usage
+    with get_openai_callback() as cb:
+        answer = chain.invoke(question)
 
     citations = [doc_to_citation(doc, i) for i, doc in enumerate(docs)]
 
-    return {
+    result = {
         "answer": answer,
-        "citations": citations  # Changed from "sources"
+        "citations": citations
     }
+
+    if include_debug:
+        result["debug"] = {
+            "retrieved_chunks": [doc.page_content for doc in docs],
+            "prompt_tokens": cb.prompt_tokens,
+            "completion_tokens": cb.completion_tokens,
+            "model": "gpt-4o-mini",
+            "k": len(docs)
+        }
+
+    return result
 
 
 def doc_to_citation(doc, index: int) -> dict:
@@ -89,4 +104,4 @@ if __name__ == "__main__":
     # test query
     response = query(chain, "What is the total revenue?")
     print(f"Answer: {response['answer']}")
-    print(f"Sources: {response["sources"]}")
+    print(f"Sources: {response["citations"]}")

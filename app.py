@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from src.ingestion import ingest
 from src.embeddings import create_index, save_index, load_index
 from src.retrieval import create_chain, query
-from src.deps import require_api_key, require_admin_key, check_rate_limit
+from src.deps import require_api_key, require_admin_key, check_rate_limit, check_debug_allowed
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from dataclasses import dataclass
@@ -49,6 +49,8 @@ class RAGState:
 class QueryRequest(BaseModel):
     question: str
     k: int = 4
+    debug: bool = False
+
 
 class IngestResponse(BaseModel):
     status: str
@@ -76,9 +78,18 @@ class Citation(BaseModel):
     section: str | None = None  # Section heading if available
 
 
+class DebugInfo(BaseModel):
+      retrieved_chunks: list[str]
+      prompt_tokens: int
+      completion_tokens: int
+      model: str
+      k: int
+
+
 class QueryResponse(BaseModel):
     answer: str
     citations: list[Citation]  # Changed from sources: list
+    debug: DebugInfo | None = None
 
 
 async def run_ingest_job(job_id: str):
@@ -185,8 +196,15 @@ async def query_rag(
     request: QueryRequest,
     _auth: None = Depends(require_api_key),
     _rate: None = Depends(check_rate_limit),
+    debug_allowed: bool = Depends(check_debug_allowed),
     ):
     """Query the RAG system and return answer and sources"""
+    # Combine here, not in deps.py
+    if request.debug and not debug_allowed:
+        raise HTTPException(403, "Debug mode requires admin key in production")
+
+    include_debug = request.debug and debug_allowed
+
     rag = app.state.rag  # snapshot the reference
 
     if rag is None:
@@ -196,10 +214,11 @@ async def query_rag(
         )
 
     try:
-        result = query(rag.chain, request.question)
+        result = query(rag.chain, request.question, include_debug=include_debug)
         return QueryResponse(
             answer=result["answer"],
-            citations=[Citation(**c) for c in result["citations"]]
+            citations=[Citation(**c) for c in result["citations"]],
+            debug=DebugInfo(**result["debug"]) if result.get("debug") else None
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

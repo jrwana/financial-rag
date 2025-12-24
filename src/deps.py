@@ -30,3 +30,18 @@ async def check_rate_limit(request: Request) -> None:
     if settings.ENV != "prod":
         return
     limiter.check(request)
+
+
+def check_debug_allowed(
+      x_admin_key: str | None = Header(None)
+  ) -> bool:
+      """Returns True if debug is allowed.
+
+      Note: Does NOT take request body to avoid circular imports.
+      The endpoint combines this result with request.debug.
+      """
+      if settings.ENV != "prod":
+          return True  # Local: always allowed
+
+      # Prod: only if valid admin key
+      return x_admin_key == settings.ADMIN_API_KEY
