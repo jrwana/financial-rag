@@ -50,12 +50,6 @@ class QueryRequest(BaseModel):
     question: str
     k: int = 4
 
-
-class QueryResponse(BaseModel):
-    answer: str
-    sources: list
-
-
 class IngestResponse(BaseModel):
     status: str
     chunks_processed: int
@@ -72,6 +66,19 @@ class IngestJobStatus(BaseModel):
 class IngestStarted(BaseModel):
     job_id: str
     status: str  # "started"
+
+
+class Citation(BaseModel):
+    source: str              # Filename or document identifier
+    chunk_id: str            # Unique chunk identifier
+    snippet: str             # Text excerpt (first ~200 chars)
+    page: int | None = None  # Page number if available
+    section: str | None = None  # Section heading if available
+
+
+class QueryResponse(BaseModel):
+    answer: str
+    citations: list[Citation]  # Changed from sources: list
 
 
 async def run_ingest_job(job_id: str):
@@ -192,7 +199,7 @@ async def query_rag(
         result = query(rag.chain, request.question)
         return QueryResponse(
             answer=result["answer"],
-            sources=result["sources"]
+            citations=[Citation(**c) for c in result["citations"]]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

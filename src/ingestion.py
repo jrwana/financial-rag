@@ -42,6 +42,13 @@ def ingest(data_dir: str = "./data") -> list:
     """Main ingestion pipeline"""
     documents = load_pdfs(data_dir)
     chunks = split_documents(documents)
+
+    # Add chunk_id to metadata
+    for i, chunk in enumerate(chunks):
+        if "chunk_id" not in chunk.metadata:
+            source = chunk.metadata.get("source", "unknown")
+            chunk.metadata["chunk_id"] = f"{source}_{i}"
+
     return chunks
 
 

@@ -54,16 +54,30 @@ def create_chain(index, model: str = DEFAULT_MODEL, k: int = DEFAULT_K):
 
 
 def query(chain, question: str) -> dict:
-    """Query the RAG system"""
-    # Get source documents
+    """Query the RAG system."""
     docs = chain.retriever.invoke(question)
-
-    # Get answer
     answer = chain.invoke(question)
+
+    citations = [doc_to_citation(doc, i) for i, doc in enumerate(docs)]
 
     return {
         "answer": answer,
-        "sources": [doc.metadata for doc in docs]
+        "citations": citations  # Changed from "sources"
+    }
+
+
+def doc_to_citation(doc, index: int) -> dict:
+    """Convert a LangChain Document to a citation dict.
+
+    Adapter pattern: transforms LangChain's Document format
+    to our stable API citation format.
+    """
+    return {
+        "source": doc.metadata.get("source", "unknown"),
+        "chunk_id": doc.metadata.get("chunk_id", f"chunk_{index}"),
+        "snippet": doc.page_content[:200].strip(),
+        "page": doc.metadata.get("page"),
+        "section": doc.metadata.get("section"),
     }
 
 
